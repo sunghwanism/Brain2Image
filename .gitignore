@@ -162,4 +162,7 @@ cython_debug/
 
 .DS_Store
 /**/**/.DS_Store
-wandb/**/*
+/**/**/__pycache__
+
+# should add how to download pretrained model
+models/ldm/label2img/model.ckpt
