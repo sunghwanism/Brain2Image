@@ -71,6 +71,7 @@ class NSD_Dataset(Dataset):
             image_index = int(csv_data.loc[i, 'index'])
             image_path = self.image_dir + str(image_index) + image_extension
             image_array = np.load(image_path)
+            image_array = (image_array / 255.0) * 2.0 - 1.0
 
             fMRI_data = {}
             
