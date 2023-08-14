@@ -7,15 +7,13 @@ import copy
 class GAE(torch.nn.Module):
     def __init__(self, feature_num, gcn_hidden_layer, conv_kernels, gnn_type = "GraphConv", masking = False, masking_ratio = .2):
         super(GAE, self).__init__()
-
-        gcn_hidden_layer.insert(0, feature_num)
-        conv_kernels.insert(0, 1)
-
         self.feature_num = feature_num
-        self.gcn_hidden_layer = gcn_hidden_layer
-        self.conv_kernels = conv_kernels
-        self.gcn_num_layer = len(gcn_hidden_layer) - 1
-        self.conv_num_layer = len(conv_kernels) - 1
+        self.gcn_hidden_layer = copy.deepcopy(gcn_hidden_layer) # insert 에서 값이 변하는 이슈로 deepcopy 처리
+        self.gcn_hidden_layer.insert(0, feature_num)
+        self.conv_kernels = copy.deepcopy(conv_kernels)
+        self.conv_kernels.insert(0, 1)
+        self.gcn_num_layer = len(self.gcn_hidden_layer) - 1
+        self.conv_num_layer = len(self.conv_kernels) - 1
         self.masking = masking
         self.masking_ratio = masking_ratio
 
@@ -37,22 +35,22 @@ class GAE(torch.nn.Module):
 
         for i in range(self.gcn_num_layer):
             if gnn_type == "GraphConv":
-                self.encoder.append(GraphConv(gcn_hidden_layer[i], gcn_hidden_layer[i+1]))
-                self.decoder.append(GraphConv(gcn_hidden_layer[self.gcn_num_layer-i], gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
+                self.encoder.append(GraphConv(self.gcn_hidden_layer[i], self.gcn_hidden_layer[i+1]))
+                self.decoder.append(GraphConv(self.gcn_hidden_layer[self.gcn_num_layer-i], self.gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
             elif gnn_type == "GCNConv":
-                self.encoder.append(GCNConv(gcn_hidden_layer[i], gcn_hidden_layer[i+1]))
-                self.decoder.append(GCNConv(gcn_hidden_layer[self.gcn_num_layer-i], gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
+                self.encoder.append(GCNConv(self.gcn_hidden_layer[i], self.gcn_hidden_layer[i+1]))
+                self.decoder.append(GCNConv(self.gcn_hidden_layer[self.gcn_num_layer-i], self.gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
             elif gnn_type == "GATConv":
-                self.encoder.append(GATConv(gcn_hidden_layer[i], gcn_hidden_layer[i+1]))
-                self.decoder.append(GATConv(gcn_hidden_layer[self.gcn_num_layer-i], gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
-            
-            self.ebn.append(nn.BatchNorm1d(gcn_hidden_layer[i+1]))
-            self.dbn.append(nn.BatchNorm1d(gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
+                self.encoder.append(GATConv(self.gcn_hidden_layer[i], self.gcn_hidden_layer[i+1]))
+                self.decoder.append(GATConv(self.gcn_hidden_layer[self.gcn_num_layer-i], self.gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
+
+            self.ebn.append(nn.BatchNorm1d(self.gcn_hidden_layer[i+1]))
+            self.dbn.append(nn.BatchNorm1d(self.gcn_hidden_layer[self.gcn_num_layer-(i+1)]))
 
         for i in range(self.gcn_num_layer): 
-            self.enconv.append(nn.Conv1d(conv_kernels[i], conv_kernels[i+1], 3, padding=1))
-            self.deconv.append(nn.ConvTranspose1d(conv_kernels[self.gcn_num_layer-i], conv_kernels[self.gcn_num_layer-(i+1)], 3, padding=1))
-    
+            self.enconv.append(nn.Conv1d(self.conv_kernels[i], self.conv_kernels[i+1], 3, padding=1))
+            self.deconv.append(nn.ConvTranspose1d(self.conv_kernels[self.gcn_num_layer-i], self.conv_kernels[self.gcn_num_layer-(i+1)], 3, padding=1))
+
     ##### encoder MLP
     def encodeMLP(self, data):
         temp_x = [data[f'x{i+1}'] for i in range(7)]
